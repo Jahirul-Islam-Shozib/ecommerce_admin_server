@@ -33,6 +33,9 @@ export class Products {
   weightUnit: string;
 
   @Prop()
+  category: string;
+
+  @Prop()
   inventoryStatus: string;
 }
 

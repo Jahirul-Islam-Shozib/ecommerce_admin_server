@@ -1,11 +1,22 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
+function parseOrigins(value?: string) {
+  return (value ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   //✅ Enable CORS
-  const allowedOrigins = ['http://localhost:4200', 'http://localhost:46881'];
+  const allowedOrigins = [
+    ...parseOrigins(process.env.CORS_ORIGINS),
+    'http://localhost:4200',
+    'http://localhost:45299',
+  ];
 
   app.enableCors({
     origin: (
