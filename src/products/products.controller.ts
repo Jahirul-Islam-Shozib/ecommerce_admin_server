@@ -31,11 +31,13 @@ export class ProductsController {
     @Query('page') page: any,
     @Query('size') size: any,
     @Body('brands') brands?: string[],
+    @Body('category') category?: string[] | string,
   ) {
     return this.productsService.getAllByPagination(
       Number(page),
       Number(size),
       brands,
+      category,
     );
   }
 
@@ -72,11 +74,13 @@ export class ProductsController {
     @Query('pageNumber') pageNumber: number = 1,
     @Query('pageSize') pageSize: number = 10,
     @Query('brands') brands?: string | string[],
+    @Query('category') category?: string | string[],
   ) {
     return this.productsService.getProductsByBrand(
       pageNumber,
       pageSize,
       brands,
+      category,
     );
   }
 
@@ -122,6 +126,7 @@ export class ProductsController {
       weightValue: row['weightValue'] || 0,
       weightUnit: row['weightUnit'] || '',
       company: row['company'] || '',
+      category: row['category'] || '',
       inventoryStatus: row['inventoryStatus'] || 'INSTOCK',
       image: row['image'] || '',
     }));

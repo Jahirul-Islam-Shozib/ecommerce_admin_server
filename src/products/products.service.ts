@@ -17,6 +17,7 @@ export class ProductsService {
     pageNumber: number,
     pageSize: number,
     brands?: string | string[],
+    category?: string[] | string,
   ): Promise<{ data: Products[]; total: number }> {
     const skip = (pageNumber - 1) * pageSize;
 
@@ -27,6 +28,14 @@ export class ProductsService {
       // Will match documents where product.brand is exactly one of these
       filter.brand = { $in: brands };
     }
+
+    const categoryArray = Array.isArray(category)
+      ? category
+      : category
+        ? [category]
+        : [];
+    if (categoryArray.length) filter.category = { $in: categoryArray };
+
     const [data, total] = await Promise.all([
       this.productModel.find(filter).skip(skip).limit(pageSize).exec(),
       this.productModel.countDocuments(filter).exec(),
@@ -67,6 +76,7 @@ export class ProductsService {
     pageNumber: number,
     pageSize: number,
     brands?: string | string[],
+    category?: string | string[],
   ): Promise<{ data: Products[]; total: number }> {
     const skip = (pageNumber - 1) * pageSize;
 
@@ -74,15 +84,33 @@ export class ProductsService {
     const brandArray = Array.isArray(brands) ? brands : brands ? [brands] : [];
 
     // Build MongoDB filter
-    const filter: Record<string, any> = {};
+    const filterByBrand: Record<string, any> = {};
     if (brandArray.length) {
-      filter.brand = { $in: brandArray };
+      filterByBrand.brand = { $in: brandArray };
+    }
+
+    const categoryArray = Array.isArray(category)
+      ? category
+      : category
+        ? [category]
+        : [];
+
+    const filterByCategory: Record<string, any> = {};
+    if (categoryArray.length) {
+      filterByCategory.category = { $in: categoryArray };
     }
 
     // Fetch data and total count in parallel
     const [data, total] = await Promise.all([
-      this.productModel.find(filter).skip(skip).limit(pageSize).exec(),
-      this.productModel.countDocuments(filter).exec(),
+      this.productModel.find(filterByBrand).skip(skip).limit(pageSize).exec(),
+      this.productModel.countDocuments(filterByBrand).exec(),
+
+      this.productModel
+        .find(filterByCategory)
+        .skip(skip)
+        .limit(pageSize)
+        .exec(),
+      this.productModel.countDocuments(filterByCategory).exec(),
     ]);
 
     return { data, total };
