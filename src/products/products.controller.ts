@@ -125,7 +125,6 @@ export class ProductsController {
       inventoryStatus: row['inventoryStatus'] || 'INSTOCK',
       image: row['image'] || '',
     }));
-
     // ✅ Save to DB
     const savedProducts: Products[] =
       await this.productsService.upsertProducts(products);
