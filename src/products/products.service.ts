@@ -9,10 +9,6 @@ export class ProductsService {
     @InjectModel(Products.name) private productModel: Model<ProductsDocument>,
   ) {}
 
-  // async getAll(): Promise<Products[]> {
-  //   return this.productModel.find().exec();
-  // }
-
   async getAllByPagination(
     pageNumber: number,
     pageSize: number,
@@ -24,8 +20,6 @@ export class ProductsService {
     const filter: FilterQuery<ProductsDocument> = {};
 
     if (Array.isArray(brands) && brands.length > 0) {
-      // Example brands = ['Ruchi', 'Radhuni']
-      // Will match documents where product.brand is exactly one of these
       filter.brand = { $in: brands };
     }
 
@@ -37,7 +31,12 @@ export class ProductsService {
     if (categoryArray.length) filter.category = { $in: categoryArray };
 
     const [data, total] = await Promise.all([
-      this.productModel.find(filter).skip(skip).limit(pageSize).exec(),
+      this.productModel
+        .find(filter)
+        .sort({ name: 1 })
+        .skip(skip)
+        .limit(pageSize)
+        .exec(),
       this.productModel.countDocuments(filter).exec(),
     ]);
 
@@ -116,28 +115,19 @@ export class ProductsService {
     return { data, total };
   }
 
-  async upsertProducts(products: Products[]): Promise<Products[]> {
-    const results: Products[] = [];
+  async upsertProducts(products: Products[]): Promise<{ count: number }> {
+    if (!products.length) return { count: 0 };
 
-    for (const product of products) {
-      if (product._id) {
-        // Update existing by id
-        const updated = await this.productModel
-          .findByIdAndUpdate(
-            product._id,
-            product,
-            { new: true, upsert: true }, // upsert: creates if not exists
-          )
-          .exec();
-        results.push(updated);
-      } else {
-        // Create new if no id
-        const newProduct = new this.productModel(product);
-        const saved = await newProduct.save();
-        results.push(saved);
-      }
-    }
+    const ops = products.map((product) => ({
+      updateOne: {
+        filter: { _id: product._id },
+        update: { $set: product },
+        upsert: true,
+      },
+    }));
 
-    return results;
+    const result = await this.productModel.bulkWrite(ops, { ordered: false });
+
+    return { count: result.upsertedCount + result.modifiedCount };
   }
 }

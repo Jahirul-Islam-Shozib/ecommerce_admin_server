@@ -16,15 +16,12 @@ import { Products } from './schema/products.schema';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { parseExcelFile } from './upload-file.helper';
+import { readdirSync, unlinkSync } from 'fs';
+import { join } from 'path';
 
 @Controller('products')
 export class ProductsController {
   constructor(private productsService: ProductsService) {}
-
-  // @Get()
-  // async getAllProducts() {
-  //   return this.productsService.getAll();
-  // }
 
   @Post('list')
   async getProducts(
@@ -110,6 +107,15 @@ export class ProductsController {
   async uploadExcel(@UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('File is required');
 
+    // Remove all previously uploaded files except the current one
+    const uploadsDir = './uploads';
+    const existingFiles = readdirSync(uploadsDir);
+    for (const f of existingFiles) {
+      if (f !== file.filename) {
+        unlinkSync(join(uploadsDir, f));
+      }
+    }
+
     // Parse Excel
     const jsonData = parseExcelFile(file.path);
 
@@ -131,13 +137,11 @@ export class ProductsController {
       image: row['image'] || '',
     }));
 
-    // ✅ Save to DB
-    const savedProducts: Products[] =
-      await this.productsService.upsertProducts(products);
+    const result = await this.productsService.upsertProducts(products);
 
     return {
       message: 'Products uploaded successfully',
-      count: savedProducts.length,
+      count: result.count,
     };
   }
 }

@@ -29,7 +29,7 @@ export class OrderItem {
   @Prop({ required: true })
   brand: string;
 
-  @Prop({ required: true })
+  @Prop()
   image: string;
 }
 export const OrderItemSchema = SchemaFactory.createForClass(OrderItem);
